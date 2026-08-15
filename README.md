@@ -72,28 +72,22 @@ Image_recognizer/
 
 ## 🌐 Streamlit Cloud Deployment Fix
 
-If you encountered dependency resolution errors when deploying to Streamlit Community Cloud (e.g. `Using Python 3.14.7 environment ... requirements are unsatisfiable` or `No matching distribution found for tensorflow`), follow these steps:
+### Why `NotFoundError: _kernel_dir` / `load_library` Occurs
+In newer TensorFlow versions (2.16+), TensorFlow introduced Keras 3 and dynamic kernel C++ library loading. On headless cloud containers like Streamlit Cloud Linux instances, importing unpinned TensorFlow throws `NotFoundError: TF_LoadLibrary(_kernel_dir)` due to missing shared C++ ABI libraries and memory limits.
 
-### Why the Error Happened
-Streamlit Cloud's build runner uses `uv` and default base images that spin up with **Python 3.14.7**. Since TensorFlow binary wheels do not exist for Python 3.14 on PyPI, `uv` fails to resolve dependencies.
-
-### How it is Fixed
-1. **[`.python-version`](.python-version)**: Specifies `3.11`. `uv` reads this file to set the Python virtual environment version.
-2. **[`runtime.txt`](runtime.txt)**: Specifies `python-3.11` for Streamlit Cloud's runtime manager.
-3. **[`requirements.txt`](requirements.txt)**: Standardizes dependencies (`streamlit`, `tensorflow`, `numpy<2.0.0`, `pillow`).
+### Solution
+1. **[`requirements.txt`](requirements.txt)**: Pins `tensorflow-cpu==2.15.0`. This CPU-optimized release includes stable static C++ bindings for Linux, uses ~150 MB RAM (well under Streamlit Cloud's 1 GB limit), and avoids dynamic kernel load errors.
+2. **[`.python-version`](.python-version)** & **[`runtime.txt`](runtime.txt)**: Pins Python runtime to `3.11`, ensuring wheel compatibility.
 
 ### Deploying to Streamlit Cloud
 
 1. Push your updated code to GitHub:
    ```bash
-   git add .python-version runtime.txt requirements.txt README.md
-   git commit -m "Fix Streamlit Cloud Python version and dependencies"
+   git add requirements.txt .python-version runtime.txt README.md
+   git commit -m "Pin tensorflow-cpu==2.15.0 to fix import load_library error"
    git push origin main
    ```
-2. Go to your app settings on [share.streamlit.io](https://share.streamlit.io/):
-   - Click **Settings** (or ⚙️ icon next to your app).
-   - Under **Advanced settings** -> **Python version**, select **3.11** (or 3.10).
-   - Click **Save** and click **Re-deploy app**.
+2. In the Streamlit Cloud dashboard ([share.streamlit.io](https://share.streamlit.io/)), click your app options menu (**⋮**) -> **Re-boot app**.
 
 ---
 
