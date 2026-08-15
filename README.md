@@ -23,7 +23,8 @@ Image_recognizer/
 ├── image_recognition.ipynb  # Jupyter Notebook with step-by-step walkthrough
 ├── sample_image.jpg         # Sample image for testing classification
 ├── requirements.txt         # Python package dependencies
-├── runtime.txt              # Specifies Python 3.11 runtime for cloud deployment
+├── runtime.txt              # Specifies Python 3.11 runtime for Streamlit Cloud
+├── .python-version          # Specifies Python 3.11 for uv dependency resolver
 └── README.md                # Project documentation
 ```
 
@@ -71,17 +72,28 @@ Image_recognizer/
 
 ## 🌐 Streamlit Cloud Deployment Fix
 
-If you encountered dependency resolution errors when deploying to Streamlit Community Cloud (e.g. `unsatisfiable requirements` or `no matching distribution found for tensorflow`), this project includes two key configuration files to solve the issue:
+If you encountered dependency resolution errors when deploying to Streamlit Community Cloud (e.g. `Using Python 3.14.7 environment ... requirements are unsatisfiable` or `No matching distribution found for tensorflow`), follow these steps:
 
-1. **[`runtime.txt`](runtime.txt)**: Specifies `python-3.11`. Streamlit Cloud defaults to newer Python runtimes (like Python 3.14) where TensorFlow binary wheels do not yet exist. Explicitly setting Python 3.11 ensures full binary wheel availability.
-2. **[`requirements.txt`](requirements.txt)**: Uses `tensorflow-cpu` with version range `<2.17.0` and caps `numpy<2.0.0` to avoid ABI incompatibility issues on Linux cloud environments.
+### Why the Error Happened
+Streamlit Cloud's build runner uses `uv` and default base images that spin up with **Python 3.14.7**. Since TensorFlow binary wheels do not exist for Python 3.14 on PyPI, `uv` fails to resolve dependencies.
+
+### How it is Fixed
+1. **[`.python-version`](.python-version)**: Specifies `3.11`. `uv` reads this file to set the Python virtual environment version.
+2. **[`runtime.txt`](runtime.txt)**: Specifies `python-3.11` for Streamlit Cloud's runtime manager.
+3. **[`requirements.txt`](requirements.txt)**: Standardizes dependencies (`streamlit`, `tensorflow`, `numpy<2.0.0`, `pillow`).
 
 ### Deploying to Streamlit Cloud
 
-1. Push your updated code (including `runtime.txt` and `requirements.txt`) to GitHub.
-2. Go to [share.streamlit.io](https://share.streamlit.io/).
-3. Select your repository `Image_recognizer`, branch `main`, and main module file `app.py`.
-4. Click **Deploy!**
+1. Push your updated code to GitHub:
+   ```bash
+   git add .python-version runtime.txt requirements.txt README.md
+   git commit -m "Fix Streamlit Cloud Python version and dependencies"
+   git push origin main
+   ```
+2. Go to your app settings on [share.streamlit.io](https://share.streamlit.io/):
+   - Click **Settings** (or ⚙️ icon next to your app).
+   - Under **Advanced settings** -> **Python version**, select **3.11** (or 3.10).
+   - Click **Save** and click **Re-deploy app**.
 
 ---
 
